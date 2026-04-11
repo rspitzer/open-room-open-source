@@ -286,10 +286,11 @@ export default function RoomView({ onBack, registryId, room }: {
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">How to contribute a room</p>
                 <ol className="space-y-1 text-sm text-slate-700 list-none">
-                  <li>1. Fork the repo on GitHub</li>
-                  <li>2. Copy <code className="bg-slate-100 px-1 rounded text-xs">registry/_template/</code> to <code className="bg-slate-100 px-1 rounded text-xs">registry/your-room-id/</code></li>
-                  <li>3. Add a background image and edit <code className="bg-slate-100 px-1 rounded text-xs">config.json</code></li>
-                  <li>4. Open a Pull Request — once merged, your room appears on the floor plan</li>
+                  <li>1. Click <strong>+ Add Room</strong> on the floor plan to reserve your spot and get a room ID</li>
+                  <li>2. Fork the repo on GitHub</li>
+                  <li>3. Copy <code className="bg-slate-100 px-1 rounded text-xs">public/registry/_template/</code> to <code className="bg-slate-100 px-1 rounded text-xs">public/registry/your-room-id/</code></li>
+                  <li>4. Add a background image and edit <code className="bg-slate-100 px-1 rounded text-xs">config.json</code></li>
+                  <li>5. Open a Pull Request — once merged, your room goes live</li>
                 </ol>
               </div>
               <div>

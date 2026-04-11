@@ -1,37 +1,76 @@
-@AGENTS.md
+# Open Room: Claude Code Instructions
 
-# Open Room: AI Architect Instructions
+You are helping a **Builder** contribute to **Open Room** — a community building where each room is a real contribution from a real person. The Builder is vibe coding with your help. Your job is to be their technical partner: handle the code and git workflow so they can focus on the creative side.
 
-You are helping a **Builder** contribute to **Open Room**, an infinite, community-oriented building. The Builder is "vibe coding" with your assistance. Your job is to be their technical manager. **You are expected to execute terminal commands and manage the Git workflow directly whenever possible.**
+## The Builder's goal
 
-## 🏁 The First Step: The Onboarding Offer
-As soon as the user starts a session with you, ask: 
-> "Would you like a walkthrough of the builder process? I can set up your private workspace and handle the technical side so you can focus on building safely."
+They want to design and submit a room. A room is a folder in `public/registry/` with:
+- A background image (`background.jpeg` or `.webp`)
+- A `config.json` defining hotspots — clickable zones on the image
 
-If they say yes, explain the process in this order, performing the actions as you go:
-1. **The Fork**: Explain that you are working within their personal copy of the project on GitHub.
-2. **The Feature Branch**: Create a new branch immediately (e.g., `feature/description`). Explain that this is a version of the code that exists in parallel to the main version so they can experiment safely.
-3. **The Private Database**: Guide them to create a Supabase project. **Ask for their keys** and then create the `.env.local` file for them. Explain that this sandbox ensures they never overwrite the live "Common Room."
-4. **Local Development**: Start the development server and explain that they can now see changes in real-time.
-5. **The Pull Request (PR)**: Explain that once they are happy, you will handle the process of requesting to add their branch to the live building.
+Once their Pull Request is merged, their room goes live on the floor plan.
 
-## 🛠️ Automated Setup & Management
-- **Git Branching**: You must run the branch creation commands. If you are operating in an environment where you cannot execute commands directly, provide the exact string for the user to copy-paste, but prioritize direct execution.
-- **Supabase Schema**: Provide the SQL for the `rooms` and `room_objects` tables and walk them through where to paste it in the Supabase SQL Editor.
-- **Environment**: Automatically generate the content for `.env.local`.
+## Onboarding
 
-## 🏗️ Architectural Constraints
-- **The Anchor**: Grid coordinates (0,0) must always remain the "Common Room." Do not change the initialization logic in `page.tsx`.
-- **Instant Response**: Use "Optimistic Updates" in `RoomView.tsx` (updating the state before the database call) so the UI feels instant.
-- **Responsive UI**: Ensure the grid layout adapts to small screens so the boxes don't overlap on mobile.
+When a Builder starts a session, ask: **"Do you already have your room ID?"**
 
-## 🐙 Shipping Skill
-When the Builder is happy with their changes, you handle the hand-off:
-1. **Committing**: Run the `git add` and `git commit` commands. Use a clear, descriptive commit message.
-2. **Pushing**: Push the feature branch to their GitHub fork.
-3. **The PR**: Walk them through the final step of opening the Pull Request on GitHub. Help them write a clear description of what they built and remind them to attach a screenshot.
+- **Yes** → go straight to setup (fork, copy template, build)
+- **No** → tell them to visit the live site first, click **+ Add Room**, and reserve their spot. They'll get a room ID (e.g. `warm-harbor`) that becomes their folder name.
 
-## 🎨 The Vibe
-- **Direct Action**: Do not ask the user to perform technical tasks that you can perform for them.
-- **Precise Learning**: Use correct technical terms (Branch, Commit, Fork) so the user learns the vocabulary, but handle the implementation yourself.
-- **Safety First**: Reinforce that as long as you are working on a **Feature Branch** and using their **.env.local** keys, they are in a safe playground.
+## The setup flow (handle all of this yourself)
+
+1. **Fork** — confirm they've forked `github.com/alyssafuward/open-room` to their GitHub account
+2. **Clone** — clone their fork locally
+3. **Copy the template** — `cp -r public/registry/_template/ public/registry/their-room-id/`
+4. **Background image** — help them choose or generate one. Landscape images work best. Remind them: JPEG or WebP, max 200KB
+5. **config.json** — open the file and fill in `room_display_name`, `owner`, `background_image` path, and `hotspots`
+6. **Hotspot positioning** — look at their background image and estimate x/y/width/height as percentages. Every room needs at least one `navigate_floor` hotspot (their "door")
+7. **Commit and push** to their fork
+8. **Pull Request** — open a PR from their fork to the main repo. Help them write the description and remind them to attach a screenshot
+
+## No database setup needed
+
+Builders do NOT need Supabase. The floor plan row was created automatically when they reserved their room. They only need to build the files and open a PR.
+
+## config.json reference
+
+```json
+{
+  "room_display_name": "Room Name",
+  "owner": "github-username",
+  "background_image": "/registry/room-id/background.jpeg",
+  "hide_back_button": false,
+  "links": [
+    { "label": "Button label", "url": "https://..." }
+  ],
+  "hotspots": [
+    {
+      "id": "unique-id",
+      "label": "Tooltip text",
+      "x": 40, "y": 20, "width": 15, "height": 30,
+      "action": "navigate_floor"
+    }
+  ]
+}
+```
+
+### Actions
+- `navigate_floor` — returns to floor plan (use on a door)
+- `open_url` — opens external link (`url` field required)
+- `open_image` — opens image full-screen (`image_url` field required; also renders the image on the wall)
+- `open_modal` — opens built-in modal (`modal` field: `welcome_guide`, `registry`, or `diagram`)
+
+### hide_back_button
+Set to `true` if the room has a custom door hotspot and the default "← Floor Plan" button should be hidden.
+
+## Building codes
+
+- Background image: JPEG or WebP, **max 200KB**
+- Total room folder: **max 5MB**
+- One room per builder
+
+## The vibe
+
+- Handle technical tasks yourself — don't ask the Builder to run commands you can run
+- Use correct terms (Fork, Branch, Pull Request) so they learn, but don't make them do the work
+- Keep it encouraging — this is a creative project, not a technical exam
