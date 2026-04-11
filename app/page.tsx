@@ -13,7 +13,6 @@ export default function OpenRoom() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [reserving, setReserving] = useState<{ x: number; y: number } | null>(null);
   const [successRoom, setSuccessRoom] = useState<{ room: any; roomId: string } | null>(null);
-  const [previewRoom, setPreviewRoom] = useState<any>(null);
 
   const refreshRooms = useCallback(async () => {
     const { data } = await supabase.from('rooms').select('*');
@@ -62,13 +61,30 @@ export default function OpenRoom() {
   if (activeRoom) {
     const isWelcomeRoom = activeRoom.grid_x === 0 && activeRoom.grid_y === 0;
     if (isWelcomeRoom) {
-      return <RoomView onBack={handleBack} registryId="room-001" />;
+      return <RoomView onBack={handleBack} registryId="room-001" room={activeRoom} />;
     }
-    // Other rooms: coming soon
+    if (activeRoom.registry_id) {
+      return <RoomView onBack={handleBack} registryId={activeRoom.registry_id} room={activeRoom} />;
+    }
+    // Reserved but not yet built
     return (
-      <div className="h-screen w-screen bg-slate-100 flex flex-col items-center justify-center gap-4">
-        <p className="text-slate-500 text-sm">This room is under construction.</p>
-        <button onClick={handleBack} className="text-indigo-600 font-bold hover:underline text-sm">← Back to Floor Plan</button>
+      <div className="min-h-screen w-screen bg-stone-100 flex flex-col items-center justify-center p-6">
+        <button onClick={handleBack} className="text-slate-400 text-sm font-bold hover:text-slate-900 transition-colors mb-8">← Floor Plan</button>
+        <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-sm border border-slate-200 text-center">
+          <p className="text-2xl mb-3">🚧</p>
+          <h2 className="text-slate-900 text-xl font-black tracking-tight mb-1">{activeRoom.name}</h2>
+          <p className="text-slate-400 text-sm mb-6">This room is under construction.</p>
+          <div className="space-y-2 text-left">
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="text-xs font-black uppercase tracking-widest text-slate-400">GitHub</span>
+              <span className="text-sm font-mono text-slate-700">@{activeRoom.github_username}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+              <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Room ID</span>
+              <code className="text-sm font-mono font-bold text-indigo-700">{activeRoom.registry_id}</code>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -117,7 +133,7 @@ export default function OpenRoom() {
             return (
               <button
                 key={`${x}-${y}`}
-                onClick={() => isCommon ? setActiveRoom(room) : setPreviewRoom(room)}
+                onClick={() => setActiveRoom(room)}
                 className={`w-28 h-28 rounded-2xl shadow-md flex flex-col items-center justify-center transition-all hover:scale-105 border-2 ${
                   isCommon ? 'bg-white border-amber-400 text-slate-900' :
                   room.owner_id === myId ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-white border-slate-200 text-slate-700'
@@ -189,40 +205,6 @@ export default function OpenRoom() {
               className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-600 transition-colors"
             >
               Back to Open Room
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Room Info Modal */}
-      {previewRoom && (
-        <div
-          className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6"
-          onClick={() => setPreviewRoom(null)}
-        >
-          <div
-            className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">Reserved Room</p>
-            <h2 className="text-slate-900 text-2xl font-black tracking-tight mb-4">{previewRoom.name}</h2>
-
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400">GitHub</span>
-                <span className="text-sm font-mono text-slate-700">@{previewRoom.github_username}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Room ID</span>
-                <code className="text-sm font-mono font-bold text-indigo-700">{previewRoom.registry_id}</code>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setPreviewRoom(null)}
-              className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-600 transition-colors"
-            >
-              Close
             </button>
           </div>
         </div>

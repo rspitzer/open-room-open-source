@@ -11,8 +11,15 @@ interface Hotspot {
   y: number;
   width: number;
   height: number;
-  action: 'open_modal' | 'navigate_floor';
+  action: 'open_modal' | 'open_image' | 'open_url' | 'navigate_floor';
   modal?: string;
+  image_url?: string;
+  url?: string;
+}
+
+interface RoomLink {
+  label: string;
+  url: string;
 }
 
 interface RoomConfig {
@@ -20,6 +27,7 @@ interface RoomConfig {
   owner: string;
   background_image: string;
   hotspots: Hotspot[];
+  links?: RoomLink[];
 }
 
 interface RegistryEntry {
@@ -30,20 +38,28 @@ interface RegistryEntry {
   status: string;
 }
 
-export default function RoomView({ onBack, registryId }: {
+export default function RoomView({ onBack, registryId, room }: {
   onBack: () => void;
   registryId: string;
+  room?: any;
 }) {
   const [config, setConfig] = useState<RoomConfig | null>(null);
+  const [configError, setConfigError] = useState(false);
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [activeImage, setActiveImage] = useState<{ url: string; label: string } | null>(null);
   const [hoveredHotspot, setHoveredHotspot] = useState<string | null>(null);
   const [registryEntries, setRegistryEntries] = useState<RegistryEntry[]>([]);
   const [registryLoading, setRegistryLoading] = useState(false);
+  const [showRoomInfo, setShowRoomInfo] = useState(false);
 
   useEffect(() => {
     fetch(`/registry/${registryId}/config.json`)
-      .then(r => r.json())
-      .then(setConfig);
+      .then(r => {
+        if (!r.ok) throw new Error('not found');
+        return r.json();
+      })
+      .then(setConfig)
+      .catch(() => setConfigError(true));
   }, [registryId]);
 
   const openRegistry = async () => {
@@ -62,6 +78,10 @@ export default function RoomView({ onBack, registryId }: {
   const handleHotspot = (hotspot: Hotspot) => {
     if (hotspot.action === 'navigate_floor') {
       onBack();
+    } else if (hotspot.action === 'open_url' && hotspot.url) {
+      window.open(hotspot.url, '_blank', 'noopener,noreferrer');
+    } else if (hotspot.action === 'open_image' && hotspot.image_url) {
+      setActiveImage({ url: hotspot.image_url, label: hotspot.label });
     } else if (hotspot.action === 'open_modal') {
       if (hotspot.modal === 'registry') {
         openRegistry();
@@ -71,17 +91,42 @@ export default function RoomView({ onBack, registryId }: {
     }
   };
 
+  if (configError || (!config && !configError && room?.status === 'reserved')) {
+    return (
+      <div className="min-h-screen w-screen bg-stone-100 flex flex-col items-center justify-center p-6">
+        <button onClick={onBack} className="text-slate-400 text-sm font-bold hover:text-slate-900 transition-colors mb-8">← Floor Plan</button>
+        <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-sm border border-slate-200 text-center">
+          <p className="text-2xl mb-3">🚧</p>
+          <h2 className="text-slate-900 text-xl font-black tracking-tight mb-1">{room?.name || registryId}</h2>
+          <p className="text-slate-400 text-sm mb-6">This room is under construction.</p>
+          {room && (
+            <div className="space-y-2 text-left">
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-400">GitHub</span>
+                <span className="text-sm font-mono text-slate-700">@{room.github_username}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Room ID</span>
+                <code className="text-sm font-mono font-bold text-indigo-700">{room.registry_id}</code>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!config) {
     return (
-      <div className="h-screen w-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-slate-500 text-sm">Loading room...</div>
+      <div className="min-h-screen w-screen bg-stone-100 flex flex-col items-center justify-center gap-4">
+        <button onClick={onBack} className="text-slate-400 text-sm font-bold hover:text-slate-900 transition-colors">← Floor Plan</button>
+        <div className="text-slate-400 text-sm">Loading room...</div>
       </div>
     );
   }
 
   return (
     <main className="min-h-screen w-screen overflow-y-auto overflow-x-hidden bg-stone-100">
-      {/* Image + hotspots share the same container so % positions always track the image */}
       <div className="relative w-full">
         <img
           src={config.background_image}
@@ -90,7 +135,28 @@ export default function RoomView({ onBack, registryId }: {
           draggable={false}
         />
 
-        {/* Hotspots */}
+        {/* Render images directly on the wall */}
+        {config.hotspots.filter(h => h.action === 'open_image' && h.image_url).map(hotspot => (
+          <div
+            key={`img-${hotspot.id}`}
+            className="absolute pointer-events-none"
+            style={{
+              left: `${hotspot.x}%`,
+              top: `${hotspot.y}%`,
+              width: `${hotspot.width}%`,
+              height: `${hotspot.height}%`,
+            }}
+          >
+            <img
+              src={hotspot.image_url}
+              alt={hotspot.label}
+              className="w-full h-full object-cover rounded shadow-md"
+              draggable={false}
+            />
+          </div>
+        ))}
+
+        {/* Hotspot click zones */}
         {config.hotspots.map(hotspot => (
           <button
             key={hotspot.id}
@@ -103,21 +169,90 @@ export default function RoomView({ onBack, registryId }: {
               top: `${hotspot.y}%`,
               width: `${hotspot.width}%`,
               height: `${hotspot.height}%`,
-              background: hoveredHotspot === hotspot.id ? 'rgba(0,0,0,0.35)' : 'transparent',
+              background: hoveredHotspot === hotspot.id ? 'rgba(0,0,0,0.20)' : 'transparent',
               cursor: 'pointer',
             }}
-            title={hotspot.label}
             aria-label={hotspot.label}
           />
         ))}
 
+        {/* Room info icon — bottom right */}
+        {room && (
+          <div className="absolute bottom-4 right-4">
+            <button
+              onClick={() => setShowRoomInfo(v => !v)}
+              className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors text-sm font-black"
+              aria-label="Room info"
+            >
+              i
+            </button>
+            {showRoomInfo && (
+              <div className="absolute bottom-10 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 w-56" onClick={e => e.stopPropagation()}>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Room Info</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">GitHub</span>
+                    <span className="text-xs font-mono text-slate-700">@{room.github_username}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">Room ID</span>
+                    <code className="text-xs font-mono font-bold text-indigo-600">{room.registry_id}</code>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Tooltip */}
         {hoveredHotspot && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs font-medium px-3 py-1.5 rounded-full pointer-events-none backdrop-blur-sm">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs font-medium px-3 py-1.5 rounded-full pointer-events-none backdrop-blur-sm whitespace-nowrap">
             {config.hotspots.find(h => h.id === hoveredHotspot)?.label}
           </div>
         )}
+
+        {/* Default back button — always visible, builders can supplement with a custom door hotspot */}
+        <button
+          onClick={onBack}
+          className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-slate-900 text-xs font-black px-4 py-2 rounded-full shadow-md hover:bg-slate-900 hover:text-white transition-all border border-slate-200"
+        >
+          ← Floor Plan
+        </button>
+
+        {/* Persistent link buttons */}
+        {config.links && config.links.length > 0 && (
+          <div className="absolute top-4 right-4 flex flex-col gap-2">
+            {config.links.map((link, i) => (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white/90 backdrop-blur-sm text-slate-900 text-xs font-black px-4 py-2 rounded-full shadow-md hover:bg-indigo-600 hover:text-white transition-all border border-slate-200"
+              >
+                {link.label} →
+              </a>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Full-size image modal */}
+      {activeImage && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+          onClick={() => setActiveImage(null)}
+        >
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <img
+              src={activeImage.url}
+              alt={activeImage.label}
+              className="w-full h-auto rounded-2xl shadow-2xl"
+            />
+            <p className="text-white/70 text-xs text-center mt-3">{activeImage.label}</p>
+          </div>
+        </div>
+      )}
 
       {/* Welcome Guide Modal */}
       {activeModal === 'welcome_guide' && (
@@ -142,17 +277,15 @@ export default function RoomView({ onBack, registryId }: {
                   <li>→ Click the door to return to the floor plan</li>
                 </ul>
               </div>
-
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">How to contribute a room</p>
                 <ol className="space-y-1 text-sm text-slate-700 list-none">
                   <li>1. Fork the repo on GitHub</li>
-                  <li>2. Copy <code className="bg-slate-100 px-1 rounded text-xs">registry/_template/</code> to <code className="bg-slate-100 px-1 rounded text-xs">registry/room-yourname/</code></li>
-                  <li>3. Add a background image and edit <code className="bg-slate-100 px-1 rounded text-xs">config.json</code> to place your hotspots</li>
+                  <li>2. Copy <code className="bg-slate-100 px-1 rounded text-xs">registry/_template/</code> to <code className="bg-slate-100 px-1 rounded text-xs">registry/your-room-id/</code></li>
+                  <li>3. Add a background image and edit <code className="bg-slate-100 px-1 rounded text-xs">config.json</code></li>
                   <li>4. Open a Pull Request — once merged, your room appears on the floor plan</li>
                 </ol>
               </div>
-
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">Building codes</p>
                 <ul className="space-y-1 text-sm text-slate-700">
@@ -212,9 +345,7 @@ export default function RoomView({ onBack, registryId }: {
                       <p className="text-sm font-bold text-slate-900">{entry.name}</p>
                       <p className="text-xs text-slate-400">@{entry.github_username}</p>
                     </div>
-                    <div className="text-right">
-                      <code className="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{entry.registry_id}</code>
-                    </div>
+                    <code className="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{entry.registry_id}</code>
                   </div>
                 ))}
               </div>

@@ -4,12 +4,13 @@
   "background_image": "/registry/your-room-id/background.jpeg",
   "hotspots": [
     {
-      "id": "unique-hotspot-id",
-      "label": "What shows in the tooltip",
-      "x": 40,
-      "y": 40,
+      "_note": "Every room needs at least one navigate_floor hotspot. Position it over a door or any exit element in your image. A default '← Floor Plan' button always appears in the top-left corner, but a custom door makes the room feel more intentional.",
+      "id": "exit-door",
+      "label": "Exit to Floor Plan",
+      "x": 80,
+      "y": 20,
       "width": 15,
-      "height": 20,
+      "height": 65,
       "action": "navigate_floor"
     }
   ]
