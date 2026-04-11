@@ -10,11 +10,13 @@ on:
       - 'public/registry/**/config.json'
 
 jobs:
-  # On PR: sync prod → dev so preview has up-to-date floor plan
+  # On PR: sync prod → dev, then update changed rooms in dev so preview reflects config
   sync-prod-to-dev:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Mirror prod Supabase into dev
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -63,6 +65,49 @@ jobs:
           }
 
           run().catch(err => { console.error(err); process.exit(1); });
+          EOF
+
+      - name: Update changed rooms in dev
+        env:
+          SUPABASE_DEV_URL: ${{ secrets.SUPABASE_DEV_URL }}
+          SUPABASE_DEV_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_DEV_SERVICE_ROLE_KEY }}
+        run: |
+          node << 'EOF'
+          const fs = require('fs');
+
+          const registryDir = 'public/registry';
+          const folders = fs.readdirSync(registryDir).filter(f => {
+            if (f === '_template') return false;
+            return fs.existsSync(`${registryDir}/${f}/config.json`);
+          });
+
+          async function syncRoom(folder) {
+            const config = JSON.parse(fs.readFileSync(`${registryDir}/${folder}/config.json`, 'utf8'));
+            const name = config.room_display_name;
+            if (!name) return;
+
+            const res = await fetch(
+              `${process.env.SUPABASE_DEV_URL}/rest/v1/rooms?registry_id=eq.${encodeURIComponent(folder)}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': process.env.SUPABASE_DEV_SERVICE_ROLE_KEY,
+                  'Authorization': `Bearer ${process.env.SUPABASE_DEV_SERVICE_ROLE_KEY}`,
+                  'Prefer': 'return=representation',
+                },
+                body: JSON.stringify({ name, status: 'active' }),
+              }
+            );
+
+            const data = await res.json();
+            if (!res.ok) { console.error(`Failed: ${folder}`, data); process.exit(1); }
+            if (!data.length) console.warn(`⚠ ${folder}: no row in dev — was it reserved?`);
+            else console.log(`✓ ${folder} → "${name}", status: active`);
+          }
+
+          Promise.all(folders.map(syncRoom))
+            .catch(err => { console.error(err); process.exit(1); });
           EOF
 
   # On merge to main: update changed rooms in prod, then sync prod → dev
