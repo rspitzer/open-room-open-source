@@ -233,7 +233,7 @@ export default function OpenRoom() {
             <div className="text-4xl mb-4">🎉</div>
             <h2 className="text-slate-900 text-2xl font-black tracking-tight mb-1">Room Reserved!</h2>
             <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-              This is your room ID. <strong className="text-slate-900">Save it now</strong> — you'll need it to name your folder in the repo. We'll add email confirmation soon.
+              This is your room ID. <strong className="text-slate-900">Save it now</strong> — you'll need it to name your folder in the repo. A GitHub issue has also been opened to track your reservation.
             </p>
 
             <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-5 mb-6 text-center">

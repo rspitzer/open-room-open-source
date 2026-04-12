@@ -15,7 +15,7 @@ Once their Pull Request is merged, their room goes live on the floor plan.
 When a Builder starts a session, ask: **"Do you already have your room ID?"**
 
 - **Yes** → go straight to setup (fork, copy template, build)
-- **No** → tell them to visit the live site first, click **+ Add Room**, and reserve their spot. They'll get a room ID (e.g. `warm-harbor`) that becomes their folder name.
+- **No** → tell them to visit the live site first, click **+ Add Room**, and reserve their spot. They'll get a room ID (e.g. `warm-harbor`) that becomes their folder name. A GitHub issue is automatically opened when they reserve — they can find it with `gh issue list --label room`.
 
 ## The setup flow (handle all of this yourself)
 
@@ -68,6 +68,17 @@ Set to `true` if the room has a custom door hotspot and the default "← Floor P
 - Background image: JPEG or WebP, **max 200KB**
 - Total room folder: **max 5MB**
 - One room per builder
+
+## Editing an existing room
+
+If a Builder wants to update their room after it's already live, they use the **Open a Task** button inside the room (click the `i` icon, bottom-right). This opens a modal where they give a title and description, which creates a GitHub issue tagged `room`.
+
+To find open edit tasks for a specific builder:
+```
+gh issue list --label room --search "(@github-username)"
+```
+
+Once a task issue is open, the Builder forks the repo, makes their changes to `public/registry/their-room-id/`, and opens a Pull Request referencing the issue.
 
 ## The vibe
 

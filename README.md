@@ -10,7 +10,7 @@ Rooms on the floor plan are real contributions. Each room is a folder in this re
 1. **Reserve your spot** — visit the live site, click **+ Add Room** on the floor plan, and fill out the form. You'll get a room ID (e.g. `warm-harbor`).
 2. **Fork this repo** on GitHub.
 3. **Develop your room** with AI-assistance.
-4. **Submit a request** to add your room to the building.  
+4. **Open a Pull Request** — once merged, your room goes live.  
 See the Contributing tab for more details.
 
 ## The vibe

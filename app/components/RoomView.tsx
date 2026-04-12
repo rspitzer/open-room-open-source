@@ -339,7 +339,7 @@ export default function RoomView({ onBack, registryId, room }: {
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">Building codes</p>
                 <ul className="space-y-1 text-sm text-slate-700">
-                  <li>• Images: WebP, max 200KB</li>
+                  <li>• Images: JPEG or WebP, max 200KB</li>
                   <li>• Total room folder: max 5MB</li>
                   <li>• One room per builder</li>
                 </ul>
