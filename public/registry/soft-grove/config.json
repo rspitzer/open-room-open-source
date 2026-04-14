@@ -21,8 +21,8 @@
       "y": 27,
       "width": 17,
       "height": 47,
-      "action": "navigate_room",
-      "room_id": "open-ridge"
+      "action": "navigate_page",
+      "path": "pages/ai-superbuilders/config.json"
     }
   ]
 }

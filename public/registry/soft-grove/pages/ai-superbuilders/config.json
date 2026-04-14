@@ -1,11 +1,6 @@
 {
   "room_display_name": "AI Superbuilders",
-  "owner": "alyssafuward",
   "background_image": "/registry/soft-grove/pages/ai-superbuilders/background.jpeg",
-  "back_room_id": "soft-grove",
-  "back_label": "Room of Doors",
-  "hide_back_button": false,
-  "links": [],
   "hotspots": [
     {
       "id": "face-1",
