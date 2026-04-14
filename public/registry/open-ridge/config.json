@@ -4,6 +4,8 @@
   "owner": "alyssafuward",
   "background_image": "/registry/open-ridge/background.jpeg",
   "hide_back_button": false,
+  "back_room_id": "soft-grove",
+  "back_label": "Room of Doors",
   "links": [],
   "hotspots": [
     {

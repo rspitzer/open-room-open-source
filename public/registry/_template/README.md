@@ -72,6 +72,13 @@
 { "action": "navigate_room", "room_id": "soft-grove" }
 ```
 
+**`navigate_page`** — loads a sub-page within your room folder. The back button returns to the previous page automatically.
+```json
+{ "action": "navigate_page", "path": "pages/my-page/config.json" }
+```
+
+Sub-pages live in a `pages/` subfolder and use the same config structure (background image + hotspots), but don't need `owner` or back navigation fields — those are handled automatically.
+
 ---
 
 ## Tips

@@ -13,11 +13,12 @@ interface Hotspot {
   y: number;
   width: number;
   height: number;
-  action: 'open_modal' | 'open_image' | 'open_url' | 'navigate_floor' | 'navigate_room';
+  action: 'open_modal' | 'open_image' | 'open_url' | 'navigate_floor' | 'navigate_room' | 'navigate_page';
   modal?: string;
   image_url?: string;
   url?: string;
   room_id?: string;
+  path?: string;
 }
 
 interface RoomLink {
@@ -51,6 +52,7 @@ export default function RoomView({ onBack, registryId, room }: {
   room?: any;
 }) {
   const router = useRouter();
+  const [pageStack, setPageStack] = useState<RoomConfig[]>([]);
   const [config, setConfig] = useState<RoomConfig | null>(null);
   const [configError, setConfigError] = useState(false);
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -105,11 +107,30 @@ export default function RoomView({ onBack, registryId, room }: {
     setRegistryLoading(false);
   };
 
+  const navigatePage = async (path: string) => {
+    if (!config) return;
+    const base = `/registry/${registryId}/`;
+    const url = base + path;
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const subConfig = await res.json();
+    setPageStack(prev => [...prev, config]);
+    setConfig(subConfig);
+  };
+
+  const handlePageBack = () => {
+    const prev = pageStack[pageStack.length - 1];
+    setPageStack(stack => stack.slice(0, -1));
+    setConfig(prev);
+  };
+
   const handleHotspot = (hotspot: Hotspot) => {
     if (hotspot.action === 'navigate_floor') {
       onBack();
     } else if (hotspot.action === 'navigate_room' && hotspot.room_id) {
       router.push(`/?room=${encodeURIComponent(hotspot.room_id)}`);
+    } else if (hotspot.action === 'navigate_page' && hotspot.path) {
+      navigatePage(hotspot.path);
     } else if (hotspot.action === 'open_url' && hotspot.url) {
       window.open(hotspot.url, '_blank', 'noopener,noreferrer');
     } else if (hotspot.action === 'open_image' && hotspot.image_url) {
@@ -268,13 +289,21 @@ export default function RoomView({ onBack, registryId, room }: {
         {/* Default back button — hidden if room has a custom door hotspot */}
         {!config.hide_back_button && (
           <button
-            onClick={() => config.back_room_id
-              ? router.push(`/?room=${encodeURIComponent(config.back_room_id)}`)
-              : onBack()
-            }
+            onClick={() => {
+              if (pageStack.length > 0) {
+                handlePageBack();
+              } else if (config.back_room_id) {
+                router.push(`/?room=${encodeURIComponent(config.back_room_id)}`);
+              } else {
+                onBack();
+              }
+            }}
             className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-slate-900 text-xs font-black px-4 py-2 rounded-full shadow-md hover:bg-slate-900 hover:text-white transition-all border border-slate-200"
           >
-            ← {config.back_label ?? (config.back_room_id ? 'Back' : 'Floor Plan')}
+            ← {pageStack.length > 0
+              ? (pageStack[pageStack.length - 1].room_display_name ?? 'Back')
+              : (config.back_label ?? (config.back_room_id ? 'Back' : 'Floor Plan'))
+            }
           </button>
         )}
 
